@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saint Lucia Bus Stand Routes</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --primary: #0f766e;
+        --primary-dark: #115e59;
+        --accent: #f59e0b;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #dfe7f1;
+        --success: #059669;
+        --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(180deg, #edf6f6 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 18px 48px;
+      }
+
+      .header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border-radius: 18px;
+        padding: 28px 24px;
+        box-shadow: var(--shadow);
+        margin-bottom: 24px;
+      }
+
+      .header h1 {
+        margin: 0 0 10px;
+        font-size: clamp(1.8rem, 3.5vw, 3rem);
+      }
+
+      .header p {
+        margin: 0;
+        color: rgba(255,255,255,0.9);
+        font-size: 1rem;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+
+      .control-panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      select, input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        background: #fff;
+        color: var(--text);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .route-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .badge {
+        display: inline-block;
+        background: rgba(15, 118, 110, 0.12);
+        color: var(--primary-dark);
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .route-name {
+        margin: 0;
+        font-size: 1.3rem;
+      }
+
+      .route-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 12px 0 18px;
+      }
+
+      .meta-box {
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+      }
+
+      .meta-box small {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .meta-box strong {
+        font-size: 1rem;
+      }
+
+      .fare-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .fare-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--border);
+      }
+
+      .fare-list li:last-child {
+        border-bottom: none;
+      }
+
+      .fare-label {
+        color: var(--muted);
+      }
+
+      .fare-value {
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .empty {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 28px;
+        text-align: center;
+        color: var(--muted);
+        display: none;
+      }
+
+      .empty.show {
+        display: block;
+      }
+
+      @media (max-width: 640px) {
+        .route-meta {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Saint Lucia Bus Stand App</h1>
+        <p>Find routes, bus stand locations, arrival times, charges, and cost per person.</p>
+      </header>
+
+      <section class="controls">
+        <div class="control-panel">
+          <label for="locationFilter">Filter by location</label>
+          <select id="locationFilter">
+            <option value="all">All locations</option>
+          </select>
+        </div>
+
+        <div class="control-panel">
+          <label for="routeSearch">Search route</label>
+          <input id="routeSearch" type="text" placeholder="Try: Castries, Soufriere, Rodney Bay" />
+        </div>
+      </section>
+
+      <section id="routeList" class="cards"></section>
+      <div id="emptyState" class="empty">No routes match your current filters.</div>
+    </div>
+
+    <script>
+      const routes = [
+        {
+          route: 'Castries to Rodney Bay',
+          location: 'Castries',
+          stand: 'Castries Bus Stand',
+          arrival: '06:15 AM, 08:40 AM, 12:10 PM, 03:30 PM',
+          duration: 'Approx. 1 hr 20 min',
+          distance: '46 km',
+          fare: 12,
+          distancePerPerson: 0.26,
+          stops: ['Castries', 'Dennery', 'Soufriere Junction', 'Rodney Bay']
+        },
+        {
+          route: 'Soufriere to VIGI',
+          location: 'Soufriere',
+          stand: 'Soufriere Bus Stand',
+          arrival: '07:00 AM, 09:30 AM, 01:15 PM, 04:45 PM',
+          duration: 'Approx. 1 hr 05 min',
+          distance: '34 km',
+          fare: 10,
+          distancePerPerson: 0.29,
+          stops: ['Soufriere', 'Choiseul', 'Anse Cochon', 'VIGI']
+        },
+        {
+          route: 'VIGI to Castries',
+          location: 'VIGI',
+          stand: 'VIGI Terminal',
+          arrival: '06:45 AM, 10:05 AM, 12:50 PM, 04:20 PM',
+          duration: 'Approx. 1 hr 15 min',
+          distance: '38 km',
+          fare: 11,
+          distancePerPerson: 0.29,
+          stops: ['VIGI', 'Dennery', 'Castries']
+        },
+        {
+          route: 'Rodney Bay to Soufriere',
+          location: 'Rodney Bay',
+          stand: 'Rodney Bay Bus Stand',
+          arrival: '05:50 AM, 08:15 AM, 11:35 AM, 02:40 PM',
+          duration: 'Approx. 1 hr 50 min',
+          distance: '54 km',
+          fare: 15,
+          distancePerPerson: 0.28,
+          stops: ['Rodney Bay', 'Marigot', 'Soufriere']
+        },
+        {
+          route: 'Anse Cochon to Castries',
+          location: 'Anse Cochon',
+          stand: 'Anse Cochon Stop',
+          arrival: '06:30 AM, 09:20 AM, 01:10 PM, 03:50 PM',
+          duration: 'Approx. 1 hr 40 min',
+          distance: '48 km',
+          fare: 13,
+          distancePerPerson: 0.27,
+          stops: ['Anse Cochon', 'Soufriere', 'Castries']
+        },
+        {
+          route: 'Marigot to VIGI',
+          location: 'Marigot',
+          stand: 'Marigot Bus Stand',
+          arrival: '06:05 AM, 08:55 AM, 12:35 PM, 05:10 PM',
+          duration: 'Approx. 1 hr 10 min',
+          distance: '36 km',
+          fare: 11,
+          distancePerPerson: 0.31,
+          stops: ['Marigot', 'Soufriere Junction', 'VIGI']
+        }
+      ];
+
+      const locationFilter = document.getElementById('locationFilter');
+      const routeSearch = document.getElementById('routeSearch');
+      const routeList = document.getElementById('routeList');
+      const emptyState = document.getElementById('emptyState');
+
+      function populateLocationFilter() {
+        const locations = [...new Set(routes.map(route => route.location))].sort();
+        locations.forEach(location => {
+          const option = document.createElement('option');
+          option.value = location;
+          option.textContent = location;
+          locationFilter.appendChild(option);
+        });
+      }
+
+      function formatCurrency(value) {
+        return `EC $${value.toFixed(2)}`;
+      }
+
+      function getFilteredRoutes() {
+        const selectedLocation = locationFilter.value;
+        const query = routeSearch.value.trim().toLowerCase();
+
+        return routes.filter(route => {
+          const matchesLocation = selectedLocation === 'all' || route.location === selectedLocation;
+          const matchesQuery =
+            !query ||
+            route.route.toLowerCase().includes(query) ||
+            route.location.toLowerCase().includes(query) ||
+            route.stand.toLowerCase().includes(query) ||
+            route.stops.some(stop => stop.toLowerCase().includes(query));
+
+          return matchesLocation && matchesQuery;
+        });
+      }
+
+      function renderRoutes() {
+        const filtered = getFilteredRoutes();
+
+        routeList.innerHTML = filtered
+          .map(route => `
+            <article class="card">
+              <div class="route-header">
+                <div>
+                  <span class="badge">${route.location}</span>
+                  <h2 class="route-name">${route.route}</h2>
+                </div>
+              </div>
+
+              <div class="route-meta">
+                <div class="meta-box">
+                  <small>Bus Stand</small>
+                  <strong>${route.stand}</strong>
+                </div>
+                <div class="meta-box">
+                  <small>Arrival Times</small>
+                  <strong>${route.arrival}</strong>
+                </div>
+                <div class="meta-box">
+                  <small>Route Duration</small>
+                  <strong>${route.duration}</strong>
+                </div>
+                <div class="meta-box">
+                  <small>Distance</small>
+                  <strong>${route.distance}</strong>
+                </div>
+              </div>
+
+              <ul class="fare-list">
+                <li><span class="fare-label">Route charge</span><span class="fare-value">${formatCurrency(route.fare)}</span></li>
+                <li><span class="fare-label">Distance-based cost per person</span><span class="fare-value">${formatCurrency(route.distancePerPerson)} / km</span></li>
+                <li><span class="fare-label">Estimated total per person</span><span class="fare-value">${formatCurrency(route.fare + route.distancePerPerson * 10)}</span></li>
+              </ul>
+
+              <div style="margin-top: 18px;">
+                <small style="display:block; color: var(--muted); margin-bottom: 8px; font-weight:700;">Stops along route</small>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  ${route.stops.map(stop => `<span class="badge" style="background:#ecfeff; color:#0f766e;">${stop}</span>`).join('')}
+                </div>
+              </div>
+            </article>
+          `)
+          .join('');
+
+        emptyState.classList.toggle('show', filtered.length === 0);
+      }
+
+      locationFilter.addEventListener('change', renderRoutes);
+      routeSearch.addEventListener('input', renderRoutes);
+
+      populateLocationFilter();
+      renderRoutes();
+    </script>
+  </body>
+</html>
